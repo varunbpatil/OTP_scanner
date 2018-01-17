@@ -179,6 +179,8 @@ def ocr(boxes, image):
     for i, box in enumerate(boxes):
         try:
             text = ocr_int(i, box, image)
+        except KeyboardInterrupt:
+            raise
         except:
             text = None
 
@@ -200,6 +202,9 @@ def pyautogui_wait(image):
             time.sleep(0.5)
 
 
+PYAUTOGUI_IMAGES_PATH = os.path.join(os.path.dirname(sys.argv[0]), 'pyautogui_images')
+
+
 # GUI automation using pyautogui to connect to VPN if not already connected
 def connect_VPN():
     ping_cmd = 'ping -c 1 ' + credentials.login['url'] + ' > /dev/null 2>&1'
@@ -217,7 +222,7 @@ def connect_VPN():
     time.sleep(1)
     pyautogui.moveTo(1447, 681)
     pyautogui.click()
-    pyautogui_wait('pyautogui_images/vpn.png')
+    pyautogui_wait(os.path.join(PYAUTOGUI_IMAGES_PATH, 'vpn.png'))
     pyautogui.typewrite(credentials.login['password'])
     pyautogui.press('tab')
     pyautogui.typewrite(text) # OTP
@@ -246,18 +251,18 @@ def start_virtual_desktop():
 
     subprocess.Popen(["vmware-view"], \
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    center = pyautogui_wait('pyautogui_images/vd1.png')
+    center = pyautogui_wait(os.path.join(PYAUTOGUI_IMAGES_PATH, 'vd1.png'))
     pyautogui.moveTo(*center)
     pyautogui.doubleClick()
-    pyautogui_wait('pyautogui_images/vd2.png')
+    pyautogui_wait(os.path.join(PYAUTOGUI_IMAGES_PATH, 'vd2.png'))
     pyautogui.typewrite(credentials.login['username'])
     pyautogui.press('tab')
     pyautogui.typewrite(text) # OTP
     pyautogui.press('enter')
-    pyautogui_wait('pyautogui_images/vd3.png')
+    pyautogui_wait(os.path.join(PYAUTOGUI_IMAGES_PATH, 'vd3.png'))
     pyautogui.typewrite(credentials.login['password'])
     pyautogui.press('enter')
-    center = pyautogui_wait('pyautogui_images/vd4.png')
+    center = pyautogui_wait(os.path.join(PYAUTOGUI_IMAGES_PATH, 'vd4.png'))
     pyautogui.moveTo(*center)
     pyautogui.doubleClick()
     print("Started virtual desktop...")
@@ -266,30 +271,34 @@ def start_virtual_desktop():
 
 
 while True:
-    # Get image from webcam
-    image = get_image()
+    try:
+        # Get image from webcam
+        image = get_image()
 
-    # Get contours from image
-    contours = get_contours(image)
+        # Get contours from image
+        contours = get_contours(image)
 
-    # Get bounding boxes for the contours
-    boxes = get_bounding_boxes(contours, image)
+        # Get bounding boxes for the contours
+        boxes = get_bounding_boxes(contours, image)
 
-    # Perform OCR
-    text = ocr(boxes, image)
-    if text:
-        print("Success:", text)
+        # Perform OCR
+        text = ocr(boxes, image)
+        if text:
+            print("Success:", text)
 
-        # Copy text to clipboard
-        os.system('echo "%s" | xsel -i' % text)
-    else:
-        print("Failed... Try again...")
-        continue
+            # Copy text to clipboard
+            os.system('echo "%s" | xsel -i' % text)
+        else:
+            print("Failed... Try again...")
+            continue
 
-    # Connect to VPN if not already connected
-    if connect_VPN():
-        continue
+        # Connect to VPN if not already connected
+        if connect_VPN():
+            continue
 
-    # Start the virtual desktop if not already running
-    start_virtual_desktop()
-    break
+        # Start the virtual desktop if not already running
+        start_virtual_desktop()
+        break
+
+    except KeyboardInterrupt:
+        sys.exit(0)
