@@ -13,8 +13,7 @@ import credentials             # Config file containing username, password, ping
                                # login = {'username' : '...', 'password' : '...', 'url' : '...'}
 
 
-pyautogui.PAUSE = 1            # Pause one second after each pyautogui command
-pyautogui.MINIMUM_DURATION = 1 # Minimum duration of mouse movements
+pyautogui.PAUSE = 0.5          # Pause one second after each pyautogui command
 pyautogui.FAILSAFE = True      # Moving cursor to top-left will cause exception
 DEBUG = False                  # If True, write intermediate images to /tmp
 
@@ -191,6 +190,16 @@ def ocr(boxes, image):
     return None
 
 
+# Wait until the given image appears on the screen before taking the next step
+def pyautogui_wait(image):
+    while True:
+        center = pyautogui.locateCenterOnScreen(image)
+        if center:
+            return center
+        else:
+            time.sleep(0.5)
+
+
 # GUI automation using pyautogui to connect to VPN if not already connected
 def connect_VPN():
     ping_cmd = 'ping -c 1 ' + credentials.login['url'] + ' > /dev/null 2>&1'
@@ -201,12 +210,14 @@ def connect_VPN():
         print("Already connected to VPN...")
         return False
 
-    pyautogui.moveTo(1587, 889)
+    cols, rows = pyautogui.size()
+
+    pyautogui.moveTo(cols-2, rows-2)
     pyautogui.click()
     time.sleep(1)
-    pyautogui.moveTo(1467, 676)
+    pyautogui.moveTo(1447, 681)
     pyautogui.click()
-    time.sleep(4)
+    pyautogui_wait('pyautogui_images/vpn.png')
     pyautogui.typewrite(credentials.login['password'])
     pyautogui.press('tab')
     pyautogui.typewrite(text) # OTP
@@ -218,7 +229,7 @@ def connect_VPN():
         if resp == 0:
             print("Connected to VPN...")
             break
-        time.sleep(1)
+        time.sleep(0.5)
 
     return True
 
@@ -235,23 +246,23 @@ def start_virtual_desktop():
 
     subprocess.Popen(["vmware-view"], \
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(4)
-    pyautogui.moveTo(550, 329)
+    center = pyautogui_wait('pyautogui_images/vd1.png')
+    pyautogui.moveTo(*center)
     pyautogui.doubleClick()
-    time.sleep(4)
+    pyautogui_wait('pyautogui_images/vd2.png')
     pyautogui.typewrite(credentials.login['username'])
     pyautogui.press('tab')
     pyautogui.typewrite(text) # OTP
     pyautogui.press('enter')
-    time.sleep(4)
+    pyautogui_wait('pyautogui_images/vd3.png')
     pyautogui.typewrite(credentials.login['password'])
     pyautogui.press('enter')
-    time.sleep(8)
+    center = pyautogui_wait('pyautogui_images/vd4.png')
+    pyautogui.moveTo(*center)
     pyautogui.doubleClick()
     print("Started virtual desktop...")
 
     return True
-
 
 
 while True:
