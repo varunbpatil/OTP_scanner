@@ -8,6 +8,9 @@ import subprocess
 import pyautogui               # GUI automation library
 import time
 import sys
+import credentials             # Config file containing username, password, ping URL.
+                               # Create credentials.py in the same directory containing
+                               # login = {'username' : '...', 'password' : '...', 'url' : '...'}
 
 
 pyautogui.PAUSE = 1            # Pause one second after each pyautogui command
@@ -190,7 +193,9 @@ def ocr(boxes, image):
 
 # GUI automation using pyautogui to connect to VPN if not already connected
 def connect_VPN():
-    resp = os.system('ping -c 1 url > /dev/null 2>&1') # URL accessible only when connected to VPN
+    ping_cmd = 'ping -c 1 ' + credentials.login['url'] + ' > /dev/null 2>&1'
+
+    resp = os.system(ping_cmd)
     if resp == 0:
         # Already connect to VPN
         print("Already connected to VPN...")
@@ -202,14 +207,14 @@ def connect_VPN():
     pyautogui.moveTo(1467, 676)
     pyautogui.click()
     time.sleep(4)
-    pyautogui.typewrite('...')   # Your password here
+    pyautogui.typewrite(credentials.login['password'])
     pyautogui.press('tab')
-    pyautogui.typewrite(text)    # OTP
+    pyautogui.typewrite(text) # OTP
     pyautogui.press('enter')
 
     # Wait until VPN connection is successful
     while True:
-        resp = os.system('ping -c 1 url > /dev/null 2>&1') # URL accessible only when connected to VPN
+        resp = os.system(ping_cmd)
         if resp == 0:
             print("Connected to VPN...")
             break
@@ -234,12 +239,12 @@ def start_virtual_desktop():
     pyautogui.moveTo(550, 329)
     pyautogui.doubleClick()
     time.sleep(4)
-    pyautogui.typewrite('...')    # Your username here
+    pyautogui.typewrite(credentials.login['username'])
     pyautogui.press('tab')
-    pyautogui.typewrite(text)     # OTP
+    pyautogui.typewrite(text) # OTP
     pyautogui.press('enter')
     time.sleep(4)
-    pyautogui.typewrite('...')    # Your password here
+    pyautogui.typewrite(credentials.login['password'])
     pyautogui.press('enter')
     time.sleep(8)
     pyautogui.doubleClick()
