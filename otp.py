@@ -194,8 +194,10 @@ def ocr(boxes, image):
 
 # Wait until the given image appears on the screen before taking the next step
 def pyautogui_wait(image):
+    w, h = pyautogui.size()
+
     while True:
-        center = pyautogui.locateCenterOnScreen(image, region=(400, 100, 800, 700))
+        center = pyautogui.locateCenterOnScreen(image, region=(400, 100, w-400, h-100))
         if center:
             return center
         else:
