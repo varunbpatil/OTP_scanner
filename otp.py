@@ -70,7 +70,7 @@ def contour_key(contour):
         w, h = h, w
 
     # We are only interested in rectangular contours (w > h)
-    if h > 0 and w/h < 1.5:
+    if h > 0 and w/h < 2:
         return 0
     else:
         return w * h
@@ -84,22 +84,19 @@ def get_contours(image):
     # Convert to grayscale
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # Convert to a binary image with adaptive thresholding.
-    # High value for the 5th parameter = Thick black boundaries.
-    # Low value  for the 6th parameter = Not concerned about reducing noise.
-    threshold = cv2.adaptiveThreshold(grayscale, 255, \
-                                      cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
-                                      cv2.THRESH_BINARY, 101, 0)
+    # Run canny edge detector on the grayscale image
+    edge = cv2.Canny(grayscale, 100, 200)
 
-    # Run canny edge detector on the binary image
-    edge = cv2.Canny(threshold, 100, 200)
+    # Dilate the edge image to get a blob of text
+    kernel = np.ones((1,5), dtype=np.uint8)
+    dilated = cv2.dilate(edge, kernel, iterations = 10)
 
     if DEBUG:
-        cv2.imwrite("/tmp/threshold_original.jpg", threshold)
         cv2.imwrite("/tmp/edge.jpg", edge)
+        cv2.imwrite("/tmp/dilated.jpg", dilated)
 
     # Find the top 10 contours based on the area of their bounding rectangles
-    contours = cv2.findContours(edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+    contours = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
     contours = sorted(contours, key=contour_key, reverse=True)[:10]
 
     return contours
@@ -145,10 +142,10 @@ def ocr_int(i, box, image):
 
     # Crop rotated image.
     # Ensure that the crop region lies within the image.
-    start_x = int(center[1] - (h * 0.6 / 2))
-    end_x   = int(start_x + h * 0.6)
-    start_y = int(center[0] - (w * 0.6 / 2))
-    end_y   = int(start_y + w * 0.6)
+    start_x = int(center[1] - (h / 2))
+    end_x   = int(start_x + h)
+    start_y = int(center[0] - (w / 2))
+    end_y   = int(start_y + w)
     start_x = start_x if 0 <= start_x < rows else (0 if start_x < 0 else rows-1)
     end_x   = end_x if 0 <= end_x < rows else (0 if end_x < 0 else rows-1)
     start_y = start_y if 0 <= start_y < cols else (0 if start_y < 0 else cols-1)
