@@ -8,6 +8,7 @@ import subprocess
 import pyautogui               # GUI automation library
 import time
 import sys
+import pwd
 import credentials             # Config file containing username, password, ping URL.
                                # Create credentials.py in the same directory containing
                                # login = {'username' : '...', 'password' : '...', 'url' : '...'}
@@ -205,6 +206,41 @@ PYAUTOGUI_IMAGES_PATH = os.path.join(os.path.dirname(sys.argv[0]), 'pyautogui_im
 
 
 # GUI automation using pyautogui to connect to VPN if not already connected
+def connect_VPN_CISCO():
+    ping_cmd = 'ping -c 1 ' + credentials.login['url'] + ' > /dev/null 2>&1'
+
+    resp = os.system(ping_cmd)
+    if resp == 0:
+        # Already connect to VPN
+        print("Already connected to VPN...")
+        return False
+
+    # Start cisco anyconnect as normal user
+    uid = pwd.getpwnam('varun')[2]
+    os.setuid(uid)
+    subprocess.Popen(["/opt/cisco/anyconnect/bin/vpnui"], \
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+    pyautogui_wait(os.path.join(PYAUTOGUI_IMAGES_PATH, 'vpn_cisco1.png'))
+    pyautogui.typewrite(credentials.login['password'])
+    pyautogui.press('tab')
+    pyautogui.typewrite(text) # OTP
+    pyautogui.press('enter')
+    pyautogui_wait(os.path.join(PYAUTOGUI_IMAGES_PATH, 'vpn_cisco2.png'))
+    pyautogui.press('enter')
+
+    # Wait until VPN connection is successful
+    while True:
+        resp = os.system(ping_cmd)
+        if resp == 0:
+            print("Connected to VPN...")
+            break
+        time.sleep(0.5)
+
+    return True
+
+
 def connect_VPN():
     ping_cmd = 'ping -c 1 ' + credentials.login['url'] + ' > /dev/null 2>&1'
 
@@ -292,7 +328,7 @@ while True:
             continue
 
         # Connect to VPN if not already connected
-        if connect_VPN():
+        if connect_VPN_CISCO():
             continue
 
         # Start the virtual desktop if not already running
